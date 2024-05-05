@@ -71,6 +71,8 @@ Kwai.Cookie = "" # 填写浏览器快手登录的Cookie值
 'user_href' # 这个是要提供链接内容
 'e_tag' # 这个需要用Kwai库里面Get_E_Tag()获取
 'content' # 要发送的内容
+'phone' # 手机号码
+'sms' # 验证码
 ```
 
 快手账号转User_ID
@@ -456,3 +458,38 @@ print(Kwai_Comments(
 ))
 
 运行结果 : {'author_name': '刘鸿运', 'data': {'time': '2024-05-04 22:11:07', 'commentId': '825207952393', 'content': '有才艺', 'start': True}}
+```
+快手发送短信验证码 (禁止使用Kwai库盗别人快手账号)
+```python
+from Kwai import *
+
+# 参数 : phone
+Post_Comment(phone)
+```
+```python
+import Kwai
+from Kwai import *
+
+phone = 13102597633
+print(Post_Comment(13102597633))
+
+运行结果 : {'author_name': '刘鸿运', 'result': True}
+```
+快手账号登录
+```python
+from Kwai import *
+
+# 参数 : phone,sms
+Post_Login(phone,sms)
+```
+```python
+import Kwai
+from Kwai import *
+
+phone = 13102597633
+sms = 659075
+print(Post_Comment(phone,sms))
+
+# 由于Token 涉及隐私，我就不放自己的了
+运行结果 : {'author_name': '刘鸿运', 'data': {'token': ['由于Token涉及我隐私，就不外放了!'], 'user': 1449407088, 'name': '奋斗少年'}, 'is_new_user': False, 'is_login': True}
+```
