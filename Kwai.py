@@ -1079,7 +1079,7 @@ def Get_E_Tag(user_id):
     return {'author_name':"刘鸿运","e_tag":jsonpath.jsonpath(repone.json(),"$..expTag")[0]}
 
 # 快手视频发布评论
-def Kwai_Comments(e_tag,user_id,photo_id,content):
+def Kwai_Comments(e_tag,user_id,photo_id,content,start):
 
     headers = {
         'Accept' : '*/*',
@@ -1121,8 +1121,24 @@ def Kwai_Comments(e_tag,user_id,photo_id,content):
     value = dt.strftime('%Y-%m-%d %H:%M:%S')
 
     res = repone.json()
+
     # 发布评论判断成功
-    if jsonpath.jsonpath(repone.json(),"$..status")[0] == "success" :
+    if jsonpath.jsonpath(repone.json(),"$..status")[0] == "success" and start == True:
+
+        # 把评论的ID保存下来
+        with open("commentId.text",'w',encoding='utf-8')as file:
+            file.write(str(res["data"]["visionAddComment"]))
+
+        return {
+            'author_name' : "刘鸿运",
+            'data' : {
+                'time' : value,
+                'commentId' : res["data"]["visionAddComment"]["commentId"],
+                'content' : res["data"]["visionAddComment"]["content"],
+                'start' : True # 发布评论成功
+            }
+        }
+    elif jsonpath.jsonpath(repone.json(),"$..status")[0] == "success" and start == False:
         return {
             'author_name' : "刘鸿运",
             'data' : {
@@ -1143,8 +1159,117 @@ def Kwai_Comments(e_tag,user_id,photo_id,content):
             }
         }
 
-# 调用快手 AI小快解答 (未开发完毕,逆向JS代码还原会慢慢搞)
-def AI_Search(Search_Message,user_id,photo_id,CommentId,e_tag,replyTo_ID,*times):
+# 快手发送登录验证码
+def Post_Comment(phone):
+
+    headers = {
+        'Accept': '*/*',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': fendou(),
+        'Host': 'id.kuaishou.com',
+        'Origin': 'https://www.kuaishou.com',
+        'Referer': 'https://www.kuaishou.com/new-reco',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    }
+
+    url = 'https://id.kuaishou.com/pass/kuaishou/sms/requestMobileCode'
+
+    params = {
+        'sid' : 'kuaishou.server.web',
+        'type' : 53,
+        'countryCode' : '+86' , # 中国大陆
+        'phone' : phone,
+        'account' : '',
+        'ztIdentityVerificationType' : '',
+        'ztIdentityVerificationCheckToken' : '',
+        'channelType' : 'UNKNOWN',
+        'encryptHeaders' : ''
+    }
+
+    repone = requests.post(url,headers=headers,params=params)
+
+    if repone.json()['result'] == 1 :
+        return {
+            'author_name' : '刘鸿运',
+            'result' : True
+        } # 发送验证码成功
+    else:
+
+        return {
+            'author_name' : '刘鸿运',
+            'result' : False
+        } # 发送验证码失败
+
+# 快手登录拿已登录过的快手账号数据
+def Post_Login(phone,sms):
+
+    headers = {
+        'Accept': '*/*',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': fendou(),
+        'Host': 'id.kuaishou.com',
+        'Origin': 'https://www.kuaishou.com',
+        'Referer': 'https://www.kuaishou.com/new-reco',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    }
+
+    url = 'https://id.kuaishou.com/pass/kuaishou/login/mobileCode'
+
+    params = {
+        'countryCode' : '+86', # 中国大陆通用
+        'phone' : phone ,
+        'sid' : 'kuaishou.server.web',
+        'createId' : 'true',
+        'smsCode' : sms,
+        'setCookie' : 'true',
+        'channelType' : 'UNKNOWN' ,
+        'encryptHeaders' : ''
+    }
+
+    repone = requests.post(url,headers=headers,params = params)
+
+    # 检测快手登录账号是1个还是2个
+    if len(jsonpath.jsonpath(repone.json(),"$..userInfos")) == 2 :
+        # 判断快手是否登录成功
+        if repone.json()['result'] == 100110031 :
+            return {
+                'author_name' : "刘鸿运",
+                'data' : {
+                    'token' : jsonpath.jsonpath(repone.json(),"$..multiUserToken"),
+                    'user' :repone.json()["userInfos"][0]["userId"],
+                    'name' :repone.json()["userInfos"][0]["name"],
+                    'user_two': repone.json()["userInfos"][1]["userId"],
+                    'name_two': repone.json()["userInfos"][1]["name"],
+                },
+                'is_new_user' : repone.json()["isNewUser"],
+                'is_login' : True # 成功登录，拿到登录账号数据
+            }
+        else:
+            return {
+                'author_name': "刘鸿运",
+                'is_login': False  # 登录失败，未拿到登录账号数据
+            }
+    elif len(jsonpath.jsonpath(repone.json(),"$..userInfos")) == 1 :
+        # 判断快手是否登录成功
+        if repone.json()['result'] == 100110031:
+            return {
+                'author_name': "刘鸿运",
+                'data': {
+                    'token': jsonpath.jsonpath(repone.json(), "$..multiUserToken"),
+                    'user': repone.json()["userInfos"][0]["userId"],
+                    'name': repone.json()["userInfos"][0]["name"],
+                },
+                'is_new_user': repone.json()["isNewUser"],
+                'is_login': True  # 成功登录，拿到登录账号数据
+            }
+        else:
+            return {
+                'author_name': "刘鸿运",
+                'is_login': False  # 登录失败，未拿到登录账号数据
+            }
+
+# 调用快手 AI小快解答 (半缺代码，你们自己研究吧)
+def AI_Search(Search_Message,user_id,photo_id,CommentId,e_tag,*times):
 
     headers = {
         'Content-Type': 'application/json',
@@ -1168,7 +1293,7 @@ def AI_Search(Search_Message,user_id,photo_id,CommentId,e_tag,replyTo_ID,*times)
                 "photoAuthorId": user_id, # 用户ID
                 "content": Search_Message, # 回复内容
                 "replyToCommentId": CommentId, # 评论总ID
-                "replyTo": replyTo_ID, # 回复的用户ID
+                "replyTo": '3xvgq9jpiayug3s', # 回复的用户ID
                 "expTag": e_tag
             },
             "query": "mutation visionAddComment($photoId: String, $photoAuthorId: String, $content: String, $replyToCommentId: ID, $replyTo: ID, $expTag: String) {\n  visionAddComment(photoId: $photoId, photoAuthorId: $photoAuthorId, content: $content, replyToCommentId: $replyToCommentId, replyTo: $replyTo, expTag: $expTag) {\n    result\n    commentId\n    content\n    timestamp\n    status\n    __typename\n  }\n}\n"
@@ -1193,7 +1318,7 @@ def AI_Search(Search_Message,user_id,photo_id,CommentId,e_tag,replyTo_ID,*times)
             paramsd = {
                 "operationName": "commentListQuery",
                 "variables": {
-                    "photoId": "3x7hhj4fwnnjbh9", # 用户ID
+                    "photoId": photo_id, # 视频ID
                     "pcursor": ""
                 },
                 "query": "query commentListQuery($photoId: String, $pcursor: String) {\n  visionCommentList(photoId: $photoId, pcursor: $pcursor) {\n    commentCount\n    pcursor\n    rootComments {\n      commentId\n      authorId\n      authorName\n      content\n      headurl\n      timestamp\n      likedCount\n      realLikedCount\n      liked\n      status\n      authorLiked\n      subCommentCount\n      subCommentsPcursor\n      subComments {\n        commentId\n        authorId\n        authorName\n        content\n        headurl\n        timestamp\n        likedCount\n        realLikedCount\n        liked\n        status\n        authorLiked\n        replyToUserName\n        replyTo\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
