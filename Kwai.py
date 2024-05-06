@@ -791,7 +791,7 @@ def Get_Comments(user_id,video_id):
     params = {
         "operationName": "commentListQuery",
         "variables": {
-            "photoId": "3x3k7itfwfqi434",
+            "photoId": video_id,
             "pcursor": ""
         },
         "query": "query commentListQuery($photoId: String, $pcursor: String) {\n  visionCommentList(photoId: $photoId, pcursor: $pcursor) {\n    commentCount\n    pcursor\n    rootComments {\n      commentId\n      authorId\n      authorName\n      content\n      headurl\n      timestamp\n      likedCount\n      realLikedCount\n      liked\n      status\n      authorLiked\n      subCommentCount\n      subCommentsPcursor\n      subComments {\n        commentId\n        authorId\n        authorName\n        content\n        headurl\n        timestamp\n        likedCount\n        realLikedCount\n        liked\n        status\n        authorLiked\n        replyToUserName\n        replyTo\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n"
@@ -1267,6 +1267,167 @@ def Post_Login(phone,sms):
                 'author_name': "刘鸿运",
                 'is_login': False  # 登录失败，未拿到登录账号数据
             }
+
+# 判断快手账号是否人机 人机特征 1.0 研究版本 研究人 : 刘鸿运
+def Judging_Human_Machine(user_id):
+
+    headers = {
+        'Accept': '*/*',
+        'Content-Type': 'application/json',
+        'Cookie': fendou(),
+        'Host': 'www.kuaishou.com',
+        'Origin': 'https://www.kuaishou.com',
+        'Referer': f'https://www.kuaishou.com/profile/{user_id}',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    }
+
+    url = 'https://www.kuaishou.com/graphql'
+
+    params = {
+        "operationName": "visionProfile",
+        "variables": {
+            "userId": user_id,
+        },
+        "query": "query visionProfile($userId: String) {\n  visionProfile(userId: $userId) {\n    result\n    hostName\n    userProfile {\n      ownerCount {\n        fan\n        photo\n        follow\n        photo_public\n        __typename\n      }\n      profile {\n        gender\n        user_name\n        user_id\n        headurl\n        user_text\n        user_profile_bg_url\n        __typename\n      }\n      isFollowing\n      __typename\n    }\n    __typename\n  }\n}\n"
+    }
+
+    repone = requests.post(url,headers=headers,json=params)
+
+    # 有作品 不是人机
+    if int(jsonpath.jsonpath(repone.json(),"$..photo_public")[0]) > 0 :
+
+        return {
+            'author_name' : "刘鸿运",
+            'user_name' : jsonpath.jsonpath(repone.json(),"$..user_name")[0],
+            'user_id' : user_id,
+            "user_fan" : jsonpath.jsonpath(repone.json(),"$..fan")[0], # 粉丝数量
+            'man-machine' : False # 不是人机
+
+        }
+    elif int(jsonpath.jsonpath(repone.json(),"$..photo_public")[0]) == 0 and int(jsonpath.jsonpath(repone.json(),"$..fan")[0]) > 100: # 粉丝数量判断人机特征
+
+        return {
+            'author_name' : "刘鸿运",
+            'user_name' : jsonpath.jsonpath(repone.json(),"$..user_name")[0],
+            'user_id' : user_id,
+            "user_fan" : jsonpath.jsonpath(repone.json(),"$..fan")[0], # 粉丝数量
+            'man-machine' : True # 是人机
+        }
+
+# 获取快手视频标题
+def User_Video_Title(user_id,video_id):
+
+    headers = {
+        'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Cookie' : fendou(),
+        'Host' : 'www.kuaishou.com',
+        'Referer' : f'https://www.kuaishou.com/short-video/{video_id}?authorId={user_id}&streamSource=find&area=homexxbrilliant',
+        'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    }
+
+    url = f'https://www.kuaishou.com/short-video/{video_id}?authorId={user_id}&streamSource=profile&area=profilexxnull'
+
+    params = {
+        'authorId' : user_id,
+        'streamSource' :'profile',
+        'area' : 'profilexxnull'
+    }
+
+    repone = requests.get(url,headers=headers,params=params)
+
+    res = re.compile(r'<title>(.*?)</title>')
+
+    return {
+        'author_name' : "刘鸿运",
+        "title" : res.findall(repone.text)[0]
+    }
+
+# 快手视频标签播放量
+def Get_Label_Now(label_name):
+
+    headers = {
+        'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Cookie' : fendou(),
+        'Host' : 'www.kuaishou.com',
+        'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    }
+
+    url = f'https://www.kuaishou.com/hashtag/{label_name}?source=1'
+
+    params = {
+        'source' : 1
+    }
+
+    repone = requests.get(url,headers=headers,params=params)
+
+    res = re.compile(r'<div class="info-num" data-v-85b0c5e6> (.*?) </div>')
+
+    return {
+        'author_name' : "刘鸿运",
+        'data' : {
+            'label_name' : label_name ,
+            'label_count' : res.findall(repone.text)[0]
+        }
+    }
+
+# 获取快手用户一级ID
+def Kwai_One_User_ID(kwai_account):
+
+    headers = {
+        'Accept' : 'application/json, text/plain, */*',
+        'Content-Type' : 'application/json;charset=UTF-8',
+        'Cookie' : fendou(),
+        'Host' : 'pay.ssl.kuaishou.com',
+        'Origin' : 'https://pay.ssl.kuaishou.com',
+        'Referer' : 'https://pay.ssl.kuaishou.com/pay'
+    }
+
+    url = 'https://pay.ssl.kuaishou.com/payAPI/k/pay/userInfo'
+
+    params = {
+        "id": kwai_account
+    }
+
+    repone = requests.post(url,headers=headers,json=params)
+
+    return {
+        'author_name' : "刘鸿运",
+        'data' : {
+            'kwai_account' : kwai_account,
+            'id' : jsonpath.jsonpath(repone.json(),"$..userId")[0]
+        }
+    }
+
+# 快手评论区回复
+def Post_Reply_Comment(user_id,video_id,message,reply_id,reply_userid,e_tag):
+
+    headers = {
+        'Accept' : '*/*',
+        'Content-Type' : 'application/json',
+        'Cookie' : fendou(),
+        'Host' : 'www.kuaishou.com',
+        'Origin' : 'https://www.kuaishou.com',
+        'Referer' : f'https://www.kuaishou.com/short-video/{video_id}?authorId={user_id}&streamSource=find&area=homexxbrilliant'
+    }
+
+    url = 'https://www.kuaishou.com/graphql'
+
+    params = {
+        "operationName": "visionAddComment",
+        "variables": {
+            "photoId": video_id,
+            "photoAuthorId": user_id,
+            "content": message,
+            "replyToCommentId": reply_id,
+            "replyTo": reply_userid,
+            "expTag": e_tag
+        },
+        "query": "mutation visionAddComment($photoId: String, $photoAuthorId: String, $content: String, $replyToCommentId: ID, $replyTo: ID, $expTag: String) {\n  visionAddComment(photoId: $photoId, photoAuthorId: $photoAuthorId, content: $content, replyToCommentId: $replyToCommentId, replyTo: $replyTo, expTag: $expTag) {\n    result\n    commentId\n    content\n    timestamp\n    status\n    __typename\n  }\n}\n"
+    }
+
+    repone = requests.post(url,headers=headers,json=params)
+
+    return repone.json()
 
 # 调用快手 AI小快解答 (半缺代码，你们自己研究吧)
 def AI_Search(Search_Message,user_id,photo_id,CommentId,e_tag,*times):
