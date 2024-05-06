@@ -9,6 +9,14 @@ Kwai库是基于Python语言开发,Kwai库作用是能够使用快手基本功�
 
 ## Kwai库的功能介绍
 
+### Kwai 1.2库更新内容 更新时间 : 2024/5/6
++ 快手验证账号是否人机
++ 快手视频获取标题
++ 快手官方用户ID获取
++ 快手获取标签热度
++ 修复快手获取回复内容无效Bug
++ 新增Kwai Bot Earry例子,Kwai库写的快手评论区机器人,可以对接ChatGPT.
+
 ### Kwai 1.1库更新内容 更新时间 : 2024/5/5
 + 快手发送短信
 + 快手账号登录
@@ -50,7 +58,8 @@ Kwai库是基于Python语言开发,Kwai库作用是能够使用快手基本功�
 目前，Kwai库已经推出了1.0测试公测版本，并得到了广大用户的好评。而在不久的将来，Kwai 2.0版本将更加强大，将为大家带来更多高级功能。相信在刘鸿运的努力下，Kwai库一定能够帮助大家解决在快手使用过程中遇到的各种难题！
 最后，让我们共同为这位才华横溢的开发者刘鸿运点赞！感谢他为我们带来了这款实用的Kwai库，让我们的快手生活更加精彩纷呈！(≧▽≦)
 
-#### 刘鸿运自制 Python Kwai 1.1 快手库
+#### 刘鸿运自制 Python Kwai 1.2 快手库
+#### 刘鸿运自制 Python Kwai 1.0 快手库
 
 导入Kwai库
 ```python
@@ -72,8 +81,10 @@ Kwai.Cookie = "" # 填写浏览器快手登录的Cookie值
 'user_href' # 这个是要提供链接内容
 'e_tag' # 这个需要用Kwai库里面Get_E_Tag()获取
 'content' # 要发送的内容
+'video_id' # 视频ID
 'phone' # 手机号码
 'sms' # 验证码
+'label_name' # 标签内容 请写标签内容不要带# 
 ```
 
 快手账号转User_ID
@@ -493,4 +504,69 @@ print(Post_Comment(phone,sms))
 
 # 由于Token 涉及隐私，我就不放自己的了
 运行结果 : {'author_name': '刘鸿运', 'data': {'token': ['由于Token涉及我隐私，就不外放了!'], 'user': 1449407088, 'name': '奋斗少年'}, 'is_new_user': False, 'is_login': True}
+```
+快手账号是否人机 1.0 版本
+```python
+from Kwai import *
+
+# 参数 : user_id
+Judging_Human_Machine(user_id)
+```
+```python
+import Kwai
+from Kwai import *
+
+Kwai.Cookie = ""
+kwai_account = "fendoushaonianshiwo"
+print(Judging_Human_Machine(kuai_account))
+
+运行结果 : {'author_name': '刘鸿运', 'user_name': '橘狗', 'user_id': '3xjnr2w5gsypzb2', 'user_fan': '31万', 'man-machine': False} # False 代表不是人机
+```
+快手视频获取标题
+```python
+from Kwai import *
+
+# 参数 : user_id,video_id
+User_Video_Title(user_id,video_id)
+```
+```python
+import Kwai
+from Kwai import *
+
+Kwai.Cookie = ""
+print(User_Video_Title("3xjnr2w5gsypzb2","3xqnr4gmnenxqqg"))
+
+运行结果 : {'author_name': '刘鸿运', 'title': '再多夸夸我吧#憧憬成为魔法少女 #阿良河基维 #小琪舞-快手'}
+```
+快手获取标签热度
+```python
+from Kwai import *
+
+# 参数 : label_name
+Get_Label_Now(label_name)
+```
+```python
+import Kwai
+from Kwai import *
+
+Kwai.Cookie = ""
+print(Get_Label_Now("憧憬成为魔法少女"))
+
+运行结果 : {'author_name': '刘鸿运', 'data': {'label_name': '憧憬成为魔法少女', 'label_count': '2.9亿'}}
+```
+快手官方用户User_ID (和user_id不一样)
+```python
+from Kwai import *
+
+# 参数 : user_id
+Kwai_One_User_ID(user_id)
+```
+```python
+import Kwai
+from Kwai import *
+
+Kwai.Cookie = ""
+print(Kwai_One_User_ID("fendoushaonianshiwo"))
+
+运行结果 : {'author_name': '刘鸿运', 'data': {'kwai_account': 'fendoushaonianshiwo', 'id': 1449407088}}
 ```
